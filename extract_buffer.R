@@ -4,10 +4,13 @@ library(sf)
 library(exactextractr)
 
 pts <- read.csv("Strawberry_SiteCoordinates_2013_2015.csv")
-rastfolder <-"/Users/kevinl/Documents/mac_sync_pcloud/Cornell/Output/Output/w_cont/"
+# rastfolder <-"/Users/kevinl/Documents/mac_sync_pcloud/Cornell/Output/Output/w_cont/"
+rastfolder <-"P:/mac_sync_pcloud/Cornell/Output/Output/w_cont/"
+
+test.terra <- terra::rast(paste(rastfolder,"final_cont_2013.tif",sep=""))
 
 pts.sf <- pts %>% st_as_sf(coords=c("X","Y"), crs = 4326) %>% 
-  st_transform(st_crs(fr))
+  st_transform(st_crs(test.terra))
 
 pts.buf <- st_buffer(pts.sf, 750)
 
@@ -25,11 +28,13 @@ sum_cats <- function(values, coverage_fractions){
 # files in continuous raster folder
 cont_files <- list.files(rastfolder, pattern="\\.tif$")
 
-for(i in length(cont_files)){
+out.tables <- list()
+
+for(i in 1:length(cont_files)){
   rast.i <- terra::rast(paste(rastfolder,cont_files[i],sep=""))
   
   extr.i <- exact_extract(rast.i, pts.buf, fun=sum_cats) %>% 
     mutate(across(everything(), .fns = ~replace_na(.,0))) 
   
-  extr.i <- bind_rows(Name=pts.buf$Name, extr.i)
+  out.tables[[i]] <- bind_cols(Name=pts.buf$Name, extr.i)
 }
